@@ -1,21 +1,16 @@
 package com.java360.pmanager.infrastructure.dto;
 
-import com.java360.pmanager.domain.model.ProjectStatus;
+import lombok.Data;
 
 import java.time.LocalDate;
 
+@Data
 public class SaveProjectDataDTO {
 
-    private String id;
-
-    private String name;
-
-    private String description;
-
-    private LocalDate initialDate;
-
-    private LocalDate finalDate;
-
-    private ProjectStatus status;
+    private final String name;
+    private final String description;
+    private final LocalDate initialDate;
+    private final LocalDate finalDate;
+    private final String status;
 
 }
