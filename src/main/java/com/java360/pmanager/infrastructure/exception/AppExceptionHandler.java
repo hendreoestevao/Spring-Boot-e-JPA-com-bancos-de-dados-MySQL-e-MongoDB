@@ -9,24 +9,42 @@ import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
+
 @ControllerAdvice
 public class AppExceptionHandler extends ResponseEntityExceptionHandler {
 
+    @ExceptionHandler(value = RequestException.class)
+    public ResponseEntity<?> handleRequestException(RequestException ex, WebRequest request) {
+        return handleException(ex, ex.getErrorCode(), ex.getMessage(), BAD_REQUEST, request);
+    }
+
     @ExceptionHandler(value = Exception.class)
-    public ResponseEntity<?> handleGenericException(RuntimeException ex, WebRequest request) {
+    public ResponseEntity<?> handleGenericException(Exception ex, WebRequest request) {
+        return handleException(ex, null, ex.getMessage(), INTERNAL_SERVER_ERROR, request);
+
+    }
+
+    private ResponseEntity<?> handleException(
+            Exception ex,
+            String errorCode,
+            String message,
+            HttpStatus status,
+            WebRequest request) {
 
         ServletWebRequest servletWebRequest = (ServletWebRequest) request;
 
         return handleExceptionInternal(
                 ex,
                 RestError.builder()
-                       // .errorCode("XYZ")
-                        .errorMessage(ex.getMessage())
-                        .status(HttpStatus.BAD_REQUEST.value())
+                        .errorCode(errorCode)
+                        .errorMessage(message)
+                        .status(status.value())
                         .path(servletWebRequest.getRequest().getRequestURI())
                         .build(),
                 new HttpHeaders(),
-                HttpStatus.BAD_REQUEST,
+                status,
                 request
         );
     }
