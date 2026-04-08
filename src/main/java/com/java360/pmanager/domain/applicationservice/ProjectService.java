@@ -1,6 +1,9 @@
 package com.java360.pmanager.domain.applicationservice;
 
 import com.java360.pmanager.domain.entity.Project;
+import com.java360.pmanager.domain.exception.DuplicateProjectException;
+import com.java360.pmanager.domain.exception.InvalidProjectStatusException;
+import com.java360.pmanager.domain.exception.ProjectNotFoundException;
 import com.java360.pmanager.domain.model.ProjectStatus;
 import com.java360.pmanager.domain.repository.ProjectRepository;
 import com.java360.pmanager.infrastructure.dto.SaveProjectDataDTO;
@@ -10,6 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Objects;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +29,10 @@ public class ProjectService {
 
     @Transactional
     public Project createProject(SaveProjectDataDTO saveProjectData) {
+        if (existsProjectWithName(saveProjectData.getName(),  null)) {
+            throw new DuplicateProjectException(saveProjectData.getName());
+        }
+
         Project project = Project.builder()
                 .name(saveProjectData.getName())
                 .description(saveProjectData.getDescription())
@@ -35,5 +45,47 @@ public class ProjectService {
 
         log.info("Project created: {}", project);
         return project;
+    }
+
+    public Project loadProject(String projectId) {
+        return this.projectRepository.findById(projectId).orElseThrow(() -> new ProjectNotFoundException(projectId));
+    }
+
+    @Transactional
+    public void deleteProject(String projectId) {
+        Project project = loadProject(projectId);
+        if (project != null) {
+            projectRepository.delete(project);
+        }
+    }
+
+    @Transactional
+    public Project updateProject(String projectId, SaveProjectDataDTO saveProjectData){
+        if (existsProjectWithName(saveProjectData.getName(), projectId)) {
+            throw new DuplicateProjectException(saveProjectData.getName());
+        }
+
+        Project project = loadProject(projectId);
+
+            project.setName(saveProjectData.getName());
+            project.setDescription(saveProjectData.getDescription());
+            project.setInitialDate(saveProjectData.getInitialDate());
+            project.setFinalDate(saveProjectData.getFinalDate());
+            project.setStatus(converToProjectStatus(saveProjectData.getStatus()));
+
+            return project;
+    }
+
+    private ProjectStatus converToProjectStatus(String statusProject) {
+        try{
+            return ProjectStatus.valueOf(statusProject);
+
+        }catch (IllegalArgumentException | NullPointerException e){
+            throw new InvalidProjectStatusException(statusProject);
+        }
+    }
+
+    public boolean existsProjectWithName(String projectName, String projectId) {
+        return projectRepository.findByName(projectName).filter(p -> !Objects.equals(p.getId(), projectId)).isPresent();
     }
 }
