@@ -14,9 +14,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
+import java.util.List;
 
 import static com.java360.pmanager.infrastructure.controller.RestConstants.PATH_MEMBERS;
 
@@ -51,5 +53,13 @@ public class MemberRestResource {
     public ResponseEntity<MemberDTO> updateMember(@PathVariable("id") String memberId, @RequestBody @Valid SaveMemberDataDTO saveMemberData) {
         Member member = memberService.updateMember(memberId, saveMemberData);
         return ResponseEntity.ok(MemberDTO.create(member));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<MemberDTO>> findMembers(
+            @RequestParam(value = "email", required = false) String email
+    ) {
+        List<Member> members = memberService.findMembers(email);
+        return ResponseEntity.ok(members.stream().map(m -> MemberDTO.create(m)).toList());
     }
 }
